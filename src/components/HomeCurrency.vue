@@ -33,7 +33,7 @@
 export default {
   props: ['rates', 'date'],
   data: () => ({
-    currencies: ['RUB', 'KZT', 'USD', 'EUR']
+    currencies: ['KZT', 'RUB', 'USD', 'EUR']
   })
 }
 </script>

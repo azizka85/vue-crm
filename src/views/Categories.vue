@@ -4,76 +4,50 @@
       <h3>Categories</h3>
     </div>
     <section>
-      <div class="row">
-        <div class="col s12 m6">
-          <div>
-            <div class="page-subtitle">
-              <h4>Create</h4>
-            </div>
+      <Loader v-if="loading" />
+      <div v-else class="row">
+        <CategoryCreate @created="addCategory" />
 
-            <form>
-              <div class="input-field">
-                <input
-                    id="name"
-                    type="text"
-                >
-                <label for="name">Name</label>
-                <span class="helper-text invalid">Enter name</span>
-              </div>
+        <CategoryEdit 
+          v-if="categories.length" 
+          :categories="categories" 
+          :key="categories.length + updateCount"
+          @updated="updateCategory" />
 
-              <div class="input-field">
-                <input
-                    id="limit"
-                    type="number"
-                >
-                <label for="limit">Limit</label>
-                <span class="helper-text invalid">Minimal value</span>
-              </div>
-
-              <button class="btn waves-effect waves-light" type="submit">
-                Create
-                <i class="material-icons right">send</i>
-              </button>
-            </form>
-          </div>
-        </div>
-        <div class="col s12 m6">
-          <div>
-            <div class="page-subtitle">
-              <h4>Edit</h4>
-            </div>
-
-            <form>
-              <div class="input-field" >
-                <select>
-                  <option>Category</option>
-                </select>
-                <label>Enter category</label>
-              </div>
-
-              <div class="input-field">
-                <input type="text" id="name">
-                <label for="name">Name</label>
-                <span class="helper-text invalid">TITLE</span>
-              </div>
-
-              <div class="input-field">
-                <input
-                    id="limit"
-                    type="number"
-                >
-                <label for="limit">Limit</label>
-                <span class="helper-text invalid">LIMIT</span>
-              </div>
-
-              <button class="btn waves-effect waves-light" type="submit">
-                Update
-                <i class="material-icons right">send</i>
-              </button>
-            </form>
-          </div>
-        </div>
+        <p v-else class="center">No categories yet</p>
       </div>
     </section>
   </div>  
 </template>
+
+<script>
+import CategoryCreate from '@/components/CategoryCreate'
+import CategoryEdit from '@/components/CategoryEdit'
+
+export default {
+  data: () => ({
+    categories: [],
+    loading: true,
+    updateCount: 0
+  }),
+  components: {
+    CategoryCreate, 
+    CategoryEdit
+  },
+  methods: {
+    addCategory(category) {
+      this.categories.push(category)
+    },
+    updateCategory(category) {
+      const idx = this.categories.findIndex(c => c.id === category.id)
+      this.categories[idx].title = category.title
+      this.categories[idx].limit = category.limit
+      this.updateCount++
+    }
+  },
+  async mounted() {
+    this.categories = await this.$store.dispatch('fetchCategories')
+    this.loading = false
+  }
+}
+</script>
