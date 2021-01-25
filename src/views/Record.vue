@@ -4,11 +4,23 @@
       <h3>New record</h3>
     </div>
 
-    <form class="form">
+    <Loader v-if="loading" />
+
+    <p class="center" v-else-if="!categories.length">
+      No categories yet.
+      <router-link to="/categories">
+        Create new category
+      </router-link>
+    </p>
+
+    <form v-else class="form" @submit.prevent="submit">
       <div class="input-field" >
-        <select>
+        <select ref="select" v-model="category.id">
           <option
-          >name cat</option>
+            v-for="category of categories"
+            :key="category.id"
+            :value="category.id"
+          >{{ category.title }}</option>
         </select>
         <label>Choose category</label>
       </div>
@@ -16,10 +28,11 @@
       <p>
         <label>
           <input
-              class="with-gap"
-              name="type"
-              type="radio"
-              value="income"
+            class="with-gap"
+            name="type"
+            type="radio"
+            value="income"
+            v-model="type"
           />
           <span>Income</span>
         </label>
@@ -28,32 +41,46 @@
       <p>
         <label>
           <input
-              class="with-gap"
-              name="type"
-              type="radio"
-              value="outcome"
+            class="with-gap"
+            name="type"
+            type="radio"
+            value="outcome"
+            v-model="type"
           />
-          <span>Expense</span>
+          <span>Outcome</span>
         </label>
       </p>
 
       <div class="input-field">
         <input
-            id="amount"
-            type="number"
+          id="amount"
+          type="number"
+          v-model.number="amount"
+          :class="{ invalid: ($v.amount.$dirty && !$v.amount.minValue) }"
         >
         <label for="amount">Sum</label>
-        <span class="helper-text invalid">amount password</span>
+        <span 
+          class="helper-text invalid"
+          v-if="$v.amount.$dirty && !$v.amount.minValue"
+        >
+          Minimal value {{ $v.amount.$params.minValue.min }}
+        </span>
       </div>
 
       <div class="input-field">
         <input
-            id="description"
-            type="text"
+          id="description"
+          type="text"
+          v-model.trim="description"
+          :class="{ invalid: ($v.description.$dirty && !$v.description.required) }"
         >
         <label for="description">Description</label>
         <span
-              class="helper-text invalid">description password</span>
+          class="helper-text invalid"
+          v-if="$v.description.$dirty && !$v.description.required"
+        >
+          Field Description must be filled
+        </span>
       </div>
 
       <button class="btn waves-effect waves-light" type="submit">
@@ -63,3 +90,81 @@
     </form>
   </div>  
 </template>
+
+<script>
+import { required, minValue } from 'vuelidate/lib/validators'
+import { mapGetters } from 'vuex' 
+
+export default {
+  data: () => ({
+    loading: true,
+    categories: [],
+    select: null,
+    category: null,
+    type: 'outcome',
+    amount: 100,
+    description: ''
+  }),
+  validations: {
+    description: { required },
+    amount: { minValue: minValue(100) }
+  },
+  methods: {
+    async submit() {
+      if(this.$v.$invalid) {
+        this.$v.$touch()
+        return
+      }      
+      if(this.canCreateRecord) {
+        try {
+          await this.$store.dispatch('createRecord', {
+            categoryId: this.category.id,
+            amount: this.amount,
+            description: this.description,
+            type: this.type,
+            date: new Date().toJSON()
+          })
+
+          const bill = this.type === 'income'
+            ? this.info.bill + this.amount
+            : this.info.bill - this.amount
+
+          await this.$store.dispatch('updateInfo', { bill })
+
+          this.$message('Record successfully created')
+          this.$v.$reset()
+
+          this.amount = 100
+          this.description = ''
+        } catch(e) { }
+      } else {
+        this.$message(`Not enough funds on the bill (${this.amount - this.info.bill})`)
+      }
+    }
+  },
+  computed: {
+    ...mapGetters(['info']),
+    canCreateRecord() {
+      if(this.type === 'income') {
+        return true
+      } 
+      return this.info.bill >= this.amount
+    }
+  },
+  async mounted() {    
+    this.categories = await this.$store.dispatch('fetchCategories')
+    this.category = this.categories.length ? this.categories[0] : null
+    this.loading = false
+
+    setTimeout(() => {
+      this.select = M.FormSelect.init(this.$refs.select)
+      M.updateTextFields()
+    }, 0)
+  },
+  destroyed() {
+    if(this.select && this.select.destroy) {
+      this.select.destroy()
+    }
+  }
+}
+</script>
