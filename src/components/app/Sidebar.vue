@@ -8,13 +8,13 @@
     >
       <a href="#" class="waves-effect waves-orange pointer">Bill</a>
     </router-link>
-    <router-link 
+    <!--router-link 
       tag="li"
       to="/detail"
       active-class="active"
     >
       <a href="#" class="waves-effect waves-orange pointer">Detail</a>
-    </router-link>
+    </router-link-->
     <router-link 
       tag="li"
       to="/history"

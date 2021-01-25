@@ -52,9 +52,7 @@ export default {
       const spend = records
         .filter(record => record.categoryId === category.id)
         .filter(record => record.type === 'outcome')
-        .reduce((total, record) => {
-          return total += +record.amount
-        }, 0)
+        .reduce((total, record) => total + record.amount, 0)
       
       const percent = 100 * spend / category.limit
       const progressPercent = percent > 100 ? 100 : percent
