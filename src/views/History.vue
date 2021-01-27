@@ -5,7 +5,7 @@
     </div>
 
     <div class="history-chart">
-      <canvas></canvas>
+      <canvas ref="canvas"></canvas>
     </div>
 
     <Loader v-if="loading" />
@@ -34,23 +34,46 @@
 <script>
 import paginationMixin from '@/mixins/pagination.mixin.js'
 import HistoryTable from '@/components/HistoryTable'
+import { Pie } from 'vue-chartjs'
 
 export default {
-  mixins: [paginationMixin],
+  extends: Pie,
+  mixins: [paginationMixin],  
   data: () => ({
     loading: true,
     records: []
   }),
+  methods: {
+    setup(categories) {
+      this.setupPagination(this.records.map(record => ({
+        ...record, 
+        categoryName: categories.find(category => category.id === record.categoryId).title,
+        typeClass: record.type === 'income' ? 'green' : 'red',
+        typeText: record.type === 'income' ? 'Income' : 'Outcome'
+      })))
+
+      this.renderChart({
+        labels: categories.map(category => category.title),
+        datasets: [{
+          label: 'Outcomes by categories',
+          data: categories.map(category => {
+            return this.records.reduce((total, record) => {
+              if(record.categoryId === category.id && record.type === 'outcome') {
+                total += record.amount
+              }
+              return total
+            }, 0)
+          }),
+          backgroundColor: ['red', 'green', 'blue', 'orange']
+        }]
+      })
+    }
+  },
   async mounted() {
     this.records = await this.$store.dispatch('fetchRecords')
     const categories = await this.$store.dispatch('fetchCategories')
 
-    this.setupPagination(this.records.map(record => ({
-      ...record, 
-      categoryName: categories.find(category => category.id === record.categoryId).title,
-      typeClass: record.type === 'income' ? 'green' : 'red',
-      typeText: record.type === 'income' ? 'Income' : 'Outcome'
-    })))
+    this.setup(categories)
     
     this.loading = false
   },
